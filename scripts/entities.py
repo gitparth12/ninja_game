@@ -1,6 +1,7 @@
 import pygame
 import math
 import random
+from typing import List
 
 from scripts.particle import Particle
 
@@ -11,7 +12,7 @@ class PhysicsEntity:
         self.type = e_type
         self.pos = list(pos)  # prevents mutability issues with lists and allows any other iterables
         self.size = size
-        self.velocity = [0, 0]
+        self.velocity: List[float] = [0, 0]
         self.collisions = {'up': False, 'down': False, 'left': False, 'right': False}
 
         self.action = ''
@@ -78,6 +79,43 @@ class PhysicsEntity:
         surf.blit(pygame.transform.flip(self.animation.img(), self.flip, False),
                   (self.pos[0] - offset[0] + self.anim_offset[0],
                    self.pos[1] - offset[1] + self.anim_offset[1]))
+
+class Enemy(PhysicsEntity):
+    def __init__(self, game, pos, size):
+        super().__init__(game, 'enemy', pos, size)
+
+        self.walking = 0
+
+    def update(self, tilemap, movement=(0, 0)):
+        if self.walking:
+            if tilemap.solid_check((self.rect().centerx + (-7 if self.flip else 7), self.pos[1] + 23)):
+                self.flip = not self.flip if (self.collisions['right'] or self.collisions['left']) else self.flip
+                movement = (movement[0] - 0.5 if self.flip else 0.5, movement[1])
+            else: 
+                self.flip = not self.flip
+            self.walking = max(0, self.walking - 1)
+        elif random.random() < 0.01:
+            self.walking = random.randint(30, 120)
+
+        super().update(tilemap, movement=movement)
+
+        if movement[0] != 0:
+            self.set_action('run')
+        else:
+            self.set_action('idle')
+
+    def render(self, surf, offset=(0, 0)):
+        super().render(surf, offset=offset)
+
+        if self.flip:
+            surf.blit(pygame.transform.flip(self.game.assets['gun'], True, False),
+                      (self.rect().centerx - 4 - self.game.assets['gun'].get_width() - offset[0],
+                       self.rect().centery - offset[1]))
+        else:
+            surf.blit(self.game.assets['gun'],
+                      (self.rect().centerx + 4 - offset[0],
+                      self.rect().centery - offset[1]))
+
 
 
 class Player(PhysicsEntity):

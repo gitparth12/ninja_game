@@ -71,6 +71,12 @@ class Tilemap:
         json.dump({'tilemap': json_tilemap, 'tile_size': self.tile_size, 'offgrid': json_offgrid_tiles}, indent=4, fp=f)
         f.close()
     
+    def solid_check(self, pos):
+        tile_loc = str(int(pos[0] // self.tile_size)) + ';' + str(int(pos[1] // self.tile_size))
+        if tile_loc in self.map:
+            if self.map[tile_loc].type in PHYSICS_TILES:
+                return self.map[tile_loc]
+
     def load(self, path):
         f = open(path, 'r')
         map_data = json.load(f)
